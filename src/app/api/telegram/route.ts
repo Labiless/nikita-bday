@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-async function sendTelegramMessage(text: string) {
+async function sendTelegramMessage(text: string, chatId?: string) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const targetChatId = chatId || process.env.TELEGRAM_CHAT_ID;
 
-  if (!botToken || !chatId) {
+  if (!botToken || !targetChatId) {
     throw new Error(
-      "Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID environment variables"
+      "Missing TELEGRAM_BOT_TOKEN, or no chat id provided (env TELEGRAM_CHAT_ID or explicit chatId)"
     );
   }
 
@@ -15,7 +15,7 @@ async function sendTelegramMessage(text: string) {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text }),
+      body: JSON.stringify({ chat_id: targetChatId, text }),
     }
   );
 
@@ -30,9 +30,10 @@ async function sendTelegramMessage(text: string) {
 export async function GET(request: NextRequest) {
   const message =
     request.nextUrl.searchParams.get("message") ?? "Hello from Next.js!";
+  const chatId = request.nextUrl.searchParams.get("chatId") ?? undefined;
 
   try {
-    await sendTelegramMessage(message);
+    await sendTelegramMessage(message, chatId);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
@@ -45,9 +46,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const message = body.message ?? "Hello from Next.js!";
+  const chatId = body.chatId ?? undefined;
 
   try {
-    await sendTelegramMessage(message);
+    await sendTelegramMessage(message, chatId);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
