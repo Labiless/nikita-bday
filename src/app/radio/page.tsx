@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { findStation, type RadioStation } from "@/lib/radio-config";
 
 const FREQ_MIN = 875; // 87.5 MHz, tenths
 const FREQ_MAX = 1080; // 108.0 MHz, tenths
@@ -25,10 +26,13 @@ const TICKS = buildTicks();
 
 export default function RadioPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const stationRef = useRef<HTMLAudioElement | null>(null);
+  const activeStationRef = useRef<RadioStation | null>(null);
   const [frequency, setFrequency] = useState(DEFAULT_FREQ);
   const [duration, setDuration] = useState<number | null>(null);
   const [power, setPower] = useState(false);
   const [tuning, setTuning] = useState(false);
+  const [onStation, setOnStation] = useState(false);
 
   const seekTo = (value: number) => {
     const audio = audioRef.current;
@@ -37,9 +41,45 @@ export default function RadioPage() {
     audio.currentTime = fraction * Math.max(duration - 0.2, 0);
   };
 
+  const playStation = (station: RadioStation) => {
+    const stationAudio = stationRef.current;
+    if (!stationAudio) return;
+    activeStationRef.current = station;
+    audioRef.current?.pause();
+    if (stationAudio.getAttribute("src") !== station.audio) {
+      stationAudio.src = station.audio;
+    }
+    stationAudio.currentTime = 0;
+    stationAudio.play().catch(() => {});
+  };
+
+  const tuneTo = (value: number) => {
+    const station = findStation(value);
+    setOnStation(!!station);
+
+    if (station) {
+      if (activeStationRef.current?.audio !== station.audio) {
+        if (power) {
+          playStation(station);
+        } else {
+          activeStationRef.current = station;
+        }
+      }
+      return;
+    }
+
+    if (activeStationRef.current) {
+      activeStationRef.current = null;
+      stationRef.current?.pause();
+    }
+    seekTo(value);
+    if (power) audioRef.current?.play().catch(() => {});
+  };
+
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
+      stationRef.current?.pause();
     };
   }, []);
 
@@ -51,21 +91,27 @@ export default function RadioPage() {
   function handleFrequencyChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = Number(e.target.value);
     setFrequency(value);
-    seekTo(value);
-    if (power) audioRef.current?.play().catch(() => {});
+    tuneTo(value);
   }
 
   function togglePower() {
     const audio = audioRef.current;
-    if (!audio) return;
+    const stationAudio = stationRef.current;
+    if (!audio || !stationAudio) return;
 
     if (power) {
       audio.pause();
+      stationAudio.pause();
       setPower(false);
     } else {
-      seekTo(frequency);
-      audio.play().catch(() => {});
       setPower(true);
+      const station = findStation(frequency);
+      if (station) {
+        playStation(station);
+      } else {
+        seekTo(frequency);
+        audio.play().catch(() => {});
+      }
     }
   }
 
@@ -80,6 +126,7 @@ export default function RadioPage() {
         preload="auto"
         onLoadedMetadata={handleLoadedMetadata}
       />
+      <audio ref={stationRef} loop preload="auto" />
 
       <p className="text-xs tracking-[0.4em] text-accent/60">[ MODULO ]</p>
       <h1 className="text-2xl font-bold tracking-[0.3em]">RADIO</h1>
@@ -100,7 +147,9 @@ export default function RadioPage() {
             ? "SPENTA"
             : tuning
               ? "SINTONIZZAZIONE..."
-              : "IN ASCOLTO"}
+              : onStation
+                ? "SEGNALE TROVATO"
+                : "IN ASCOLTO"}
         </span>
 
         <div className="relative w-full">
