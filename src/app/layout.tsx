@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ECHELON",
+  title: "DEPARTMENT 7 OS",
   description: "Field agent terminal",
 };
 
