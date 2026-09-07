@@ -100,7 +100,7 @@ export default function Home() {
         <p className="text-xs tracking-[0.4em] text-accent/60">
           [ CONNESSIONE SICURA STABILITA ]
         </p>
-        <h1 className="text-2xl font-bold tracking-[0.3em]">ECHELON</h1>
+        <h1 className="text-2xl font-bold tracking-[0.3em]">DEPARTMENT 7</h1>
         <div className="flex items-center gap-2 text-xs text-accent/70">
           <span className="h-1.5 w-1.5 rounded-full bg-accent blink" />
           <span>SISTEMA ONLINE</span>
