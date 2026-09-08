@@ -1,5 +1,6 @@
 export const SPECIAL_NUMBERS: Record<string, string> = {
   "3352648871": "/audio/last-call.mp3",
+  "3336678901" : "/audio/ferry.mp3",
 };
 
 export function normalizeNumber(raw: string): string {
